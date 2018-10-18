@@ -68,7 +68,7 @@ class ImageNameFinder:
     def __init__(self):
         self.image_processor = ImageProcessor()
 
-    # Use root_mean_square_diff < 965 as a similarity condition for search
+    # Use root_mean_square_diff < 965 as a similarity condition for the following three
     def find_matching_image_filename(self, guess_image, solution_images):
         for figure in solution_images:
             file_name = figure.visualFilename
@@ -363,18 +363,6 @@ class TwoByTwoSolver:
                         solution_number = int(solution_figure_filename[-5])  # Get image number from filename string
                         return solution_number
 
-        # x-axis flip transformation
-        if self.check_if_x_axis_flip(problem_figures):
-            for f in problem_figures:
-                if "B.png" in f.visualFilename:
-                    f_image = Image.open(f.visualFilename).transpose(Image.FLIP_TOP_BOTTOM)
-                    solution_figure_filename = figure_finder.find_matching_image_filename(f_image,
-                                                                                          solution_figures)  # Pass in figure B
-
-                    # If proposed solution figure is present, return the number of that image
-                    if solution_figure_filename:
-                        solution_number = int(solution_figure_filename[-5])  # Get image number from filename string
-                        return solution_number
         # y-axis flip transformation
         if self.check_if_y_axis_flip(problem_figures):
             for f in problem_figures:
@@ -382,6 +370,19 @@ class TwoByTwoSolver:
                     f_image = Image.open(f.visualFilename).transpose(Image.FLIP_LEFT_RIGHT)
                     solution_figure_filename = figure_finder.find_matching_image_filename(f_image,
                                                                                           solution_figures)  # Pass in figure C
+
+                    # If proposed solution figure is present, return the number of that image
+                    if solution_figure_filename:
+                        solution_number = int(solution_figure_filename[-5])  # Get image number from filename string
+                        return solution_number
+
+        # x-axis flip transformation
+        if self.check_if_x_axis_flip(problem_figures):
+            for f in problem_figures:
+                if "B.png" in f.visualFilename:
+                    f_image = Image.open(f.visualFilename).transpose(Image.FLIP_TOP_BOTTOM)
+                    solution_figure_filename = figure_finder.find_matching_image_filename(f_image,
+                                                                                          solution_figures)  # Pass in figure B
 
                     # If proposed solution figure is present, return the number of that image
                     if solution_figure_filename:
@@ -503,7 +504,7 @@ class TwoByTwoSolver:
         # otherwise, return -1
         if answer and similarity > 0.95:
             return answer
-        elif len(sifted_solution_images) < 4:
+        elif len(sifted_solution_images) < 5:
             return answer
         else:
             return -1
