@@ -31,6 +31,13 @@ class Agent:
                 return answer
             # Else perform a deeper analysis
             answer = TwoByTwoSolver(problem).do_transformation_analysis()
+        # elif problem_definition.is_threebythree_problem（problem):
+        #     answer = ThreeByThreeSolver(problem).do_basic_analysis()
+        #     # Return answer if first layer analysis succeeds
+        #     if answer != -1:
+        #         return answer
+        #     # Else perform a deeper analysis
+        #     answer = ThreeByThreeSolver(problem).do_transformation_analysis()
         return answer
 
 
@@ -40,6 +47,10 @@ class DefinitionProblem:
 
     @staticmethod
     def is_twobytwo_problem(problem):
+        return len(problem.figures) == 9
+
+    @staticmethod
+    def is_threebythree_problem(problem):
         return len(problem.figures) == 9
 
     @staticmethod
@@ -466,8 +477,10 @@ class TwoByTwoSolver:
         # Remove possible solutions cells that do not match these patterns.
         unsifted_images = dict(image_solutions)
         sifted_solution_images = self.Keep_valid_solution_figures(unsifted_images, ABC_pattern)  # Sift for ABC pattern
-        sifted_solution_images = self.Keep_valid_solution_figures(sifted_solution_images, AB_pattern)  # Sift for AB pattern
-        sifted_solution_images = self.Keep_valid_solution_figures(sifted_solution_images, AC_pattern)  # Sift for AC pattern
+        sifted_solution_images = self.Keep_valid_solution_figures(sifted_solution_images,
+                                                                  AB_pattern)  # Sift for AB pattern
+        sifted_solution_images = self.Keep_valid_solution_figures(sifted_solution_images,
+                                                                  AC_pattern)  # Sift for AC pattern
         if not sifted_solution_images:
             sifted_solution_images = image_solutions
 
@@ -507,3 +520,9 @@ class TwoByTwoSolver:
             return answer
         else:
             return -1
+
+
+class ThreeByThreeSolver:
+    def __init__(self, problem):
+        self.image_analyzer = ImageProcessor()
+        self.problem = problem
