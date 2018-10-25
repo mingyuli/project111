@@ -2,7 +2,7 @@ import os
 import sys
 import csv
 
-from Agent import Agent
+import Agent
 from ProblemSet import ProblemSet
 from RavensGrader import grade
 
@@ -16,7 +16,7 @@ def solve():
     while not line=="":
         sets.append(ProblemSet(line))
         line=getNextLine(r)
-    agent=Agent()
+    agent=Agent.Agent()
     with open("AgentAnswers.csv","w") as results:
         results.write("ProblemSet,RavensProblem,Agent's Answer\n")
         for set in sets:
