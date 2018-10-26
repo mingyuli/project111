@@ -4,7 +4,8 @@ from collections import deque, defaultdict
 import math
 import time
 
-class TransformationFinder:
+
+class TransformFinder:
     def __init__(self):
         self.PIXEL_PRESENT = 1
         self.PIXEL_NOT_PRESENT = 0
