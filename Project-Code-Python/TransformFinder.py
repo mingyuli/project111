@@ -2,8 +2,6 @@ from Utils import Transformation, Blob, BlobPairInfo
 from PIL import Image, ImageChops, ImageDraw
 from collections import deque, defaultdict
 import math
-import time
-
 
 class TransformFinder:
     def __init__(self):
@@ -13,29 +11,29 @@ class TransformFinder:
         self.IMAGE_HEIGHT = 0
         self.ThresholdScore = 99
 
-    def FindTx(self,A,B,C):
+    def find_tx(self, A, B, C):
         self.IMAGE_WIDTH = A.width
         self.IMAGE_HEIGHT = A.height
         Tx = []
-        self.BlobsA = self.GetBlobs(A)
-        #self.showBlobs(A,BlobsA)
-        self.BlobsB = self.GetBlobs(B)
-        self.BlobsC = self.GetBlobs(C)
+        self.BlobsA = self.get_blobs(A)
+        #self.show_blobs(A,BlobsA)
+        self.BlobsB = self.get_blobs(B)
+        self.BlobsC = self.get_blobs(C)
 
         #Super Transformations (level 1)
-        Tx0 = self.FindSuperTx(A,B,C)
+        Tx0 = self.find_super_tx(A, B, C)
         Tx.append(Tx0)
 
         #Figure Transformations (level 2)
-        Tx1 = self.FindFigureTx(A,B)
-        Tx2 = self.FindFigureTx(B,C)
+        Tx1 = self.find_figure_tx(A, B)
+        Tx2 = self.find_figure_tx(B, C)
         Tx.append([Tx1,Tx2])
 
         #Blob Transformations (level 3)
         if max(Tx1.getHighestScore(),Tx2.getHighestScore()) < self.ThresholdScore:
-            Tx3 = self.FindBlobTx(A,self.BlobsA,B,self.BlobsB)
-            Tx4 = self.FindBlobTx(B,self.BlobsB,C,self.BlobsC)
-            Tx5 = self.FindBlobTx(A,self.BlobsA,C,self.BlobsC)
+            Tx3 = self.find_blob_tx(A, self.BlobsA, B, self.BlobsB)
+            Tx4 = self.find_blob_tx(B, self.BlobsB, C, self.BlobsC)
+            Tx5 = self.find_blob_tx(A, self.BlobsA, C, self.BlobsC)
             #                   0                           4                   6                   7
             #details contains (same,morph,translate,scale,addition,deletion,blobCountDiffernce,morph pattern)
             if len(Tx3.getBestTxDetails())>0 and len(Tx4.getBestTxDetails())>0:
@@ -50,20 +48,20 @@ class TransformFinder:
             Tx.append([Tx3,Tx4])
         return Tx
 
-    def FindDiagTx(self,A,B):
+    def find_diag_tx(self, A, B):
         self.IMAGE_WIDTH = A.width
         self.IMAGE_HEIGHT = A.height
         Tx = []
-        self.BlobsA = self.GetBlobs(A)
-        self.BlobsB = self.GetBlobs(B)
+        self.BlobsA = self.get_blobs(A)
+        self.BlobsB = self.get_blobs(B)
 
         #Figure Transformations (level 2)
-        Tx1 = self.FindFigureTx(A,B)
+        Tx1 = self.find_figure_tx(A, B)
         Tx.append(Tx1)
 
         #Blob Transformations (level 3)
         if Tx1.getHighestScore() < self.ThresholdScore:
-            Tx3 = self.FindBlobTx(A,self.BlobsA,B,self.BlobsB)
+            Tx3 = self.find_blob_tx(A, self.BlobsA, B, self.BlobsB)
             #details contains (same,morph,translate,scale,addition,deletion,morph pattern)
             if len(Tx3.getBestTxDetails())>0 and Tx3.getBestTxDetails()[1] >=1:
                 Tx3.setBestTxDetails(Tx3.getBestTxDetails()+(1,)) #Adding morph pattern bit
@@ -72,37 +70,37 @@ class TransformFinder:
             Tx.append(Tx3)
         return Tx
 
-    def FindSuperTx(self,A,B,C):
+    def find_super_tx(self, A, B, C):
         Tx = TransformationFrame()
-        Tx.assignTxScore(Transformation.ConstantAddition,self.ConstantAddition(A,B,C))
-        Tx.assignTxScore(Transformation.ConstantSubtraction,self.ConstantSubtraction(A,B,C))
-        Tx.assignTxScore(Transformation.Addition,self.Addition(A,B,C))
-        Tx.assignTxScore(Transformation.Subtraction,self.Subtraction(A,B,C))
-        Tx.assignTxScore(Transformation.AddcumSub,self.AddcumSub(A,B,C))
-        Tx.assignTxScore(Transformation.Common,self.Common(A,B,C))
-        Tx.assignTxScore(Transformation.Divergence,self.Divergence(A,B,C))
-        Tx.assignTxScore(Transformation.Convergence,self.Convergence(A,B,C))
-        correspAC, additionCnt, deletionCnt = self.GetBlobCorrespondence(self.BlobsA,self.BlobsC)
+        Tx.assignTxScore(Transformation.ConstantAddition, self.constant_addition(A, B, C))
+        Tx.assignTxScore(Transformation.ConstantSubtraction, self.constant_subtraction(A, B, C))
+        Tx.assignTxScore(Transformation.Addition, self.addition(A, B, C))
+        Tx.assignTxScore(Transformation.Subtraction, self.subtraction(A, B, C))
+        Tx.assignTxScore(Transformation.AddcumSub, self.addcum_sub(A, B, C))
+        Tx.assignTxScore(Transformation.Common, self.common(A, B, C))
+        Tx.assignTxScore(Transformation.Divergence, self.divergence(A, B, C))
+        Tx.assignTxScore(Transformation.Convergence, self.convergence(A, B, C))
+        correspAC, additionCnt, deletionCnt = self.get_blob_correspondence(self.BlobsA, self.BlobsC)
         ACMetaData = self.GetBlobMetaData(correspAC,self.BlobsA,self.BlobsC)
         if ACMetaData['repetition'] == False and ACMetaData['oneToOne'] == True:
-            Tx.assignTxScore(Transformation.Migration,self.Migration(A,B,C))
+            Tx.assignTxScore(Transformation.Migration, self.migration(A, B, C))
         return Tx
 
-    def FindFigureTx(self,A,B):
+    def find_figure_tx(self, A, B):
         Tx = TransformationFrame()
         #Transformations (level 2)
-        Tx.assignTxScore(Transformation.Same,(self.Same(A,B),0))
+        Tx.assignTxScore(Transformation.Same, (self.same(A, B), 0))
         if Tx.getHighestScore() < self.ThresholdScore:
-            Tx.assignTxScore(Transformation.RepetitionByExpansion,self.RepetitionByExpansion(A,B))
-            Tx.assignTxScore(Transformation.RepetitionByTranslation,self.RepetitionByTranslation(A,B))
+            Tx.assignTxScore(Transformation.RepetitionByExpansion, self.repetition_by_expansion(A, B))
+            Tx.assignTxScore(Transformation.RepetitionByTranslation, self.repetition_by_translation(A, B))
         #Tx.assignTxScore(Transformation.RepetitionByCircularTranslation,self.RepetitionByCircularTranslation(A,B))
         return Tx
 
-    def FindBlobTx(self,A,BlobsA,B,BlobsB):
+    def find_blob_tx(self, A, BlobsA, B, BlobsB):
         Tx = TransformationFrame()
         Tx.Blobs.append(BlobsA)
         Tx.Blobs.append(BlobsB)
-        Tx.corresp, additionsToBlobsB, deletionsInBlobsA = self.GetBlobCorrespondence(BlobsA, BlobsB)
+        Tx.corresp, additionsToBlobsB, deletionsInBlobsA = self.get_blob_correspondence(BlobsA, BlobsB)
         Tx.BlobMetaData = self.GetBlobMetaData(Tx.corresp,BlobsA,BlobsB)
         numberMorphed = 0
         #if  additionsToBlobsB==deletionsInBlobsA:
@@ -115,15 +113,15 @@ class TransformFinder:
         if Tx.BlobMetaData['repetition'] == False:
             #only if more than one obj is present in figure
             if len(Tx.corresp.keys()) >= 1:
-                details = self.BlobTransforms(Tx.corresp,Tx.Blobs[0],Tx.Blobs[1])
+                details = self.blob_transforms(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1])
                 details = (details[0],details[1],details[2]+numberMorphed,details[3],details[4])
                 details = details + (Tx.BlobMetaData['AdditionCount'],Tx.BlobMetaData['DeletionCount'],Tx.BlobMetaData['blobCountDifference'])
                 Tx.assignTxScore(Transformation.BlobTransforms,details)
-                Tx.assignTxScore(Transformation.ScalingOfOneObject,self.ScalingOfOneObject(Tx.corresp,Tx.Blobs[0],Tx.Blobs[1]))
-                Tx.assignTxScore(Transformation.TranslationOfOneObject,self.TranslationOfOneObject(Tx.corresp,Tx.Blobs[0],Tx.Blobs[1]))
+                Tx.assignTxScore(Transformation.ScalingOfOneObject, self.scaling_of_one_object(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1]))
+                Tx.assignTxScore(Transformation.TranslationOfOneObject, self.translation_of_one_object(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1]))
         return Tx
 
-    def BlobTransforms(self, corresp, BlobsA, BlobsB):
+    def blob_transforms(self, corresp, BlobsA, BlobsB):
         morphCount = 0
         translationCount = 0
         scalingCount = 0
@@ -141,30 +139,30 @@ class TransformFinder:
         score = 99
         return score, sameCount, morphCount, translationCount, scalingCount
 
-    def Addition(self,A,B,C):
+    def addition(self, A, B, C):
         AplusB = ImageChops.lighter(A,B)
-        score = self.Same(AplusB,C)
+        score = self.same(AplusB, C)
         return score, 0
 
-    def Subtraction(self,A,B,C):
+    def subtraction(self, A, B, C):
         AuB = ImageChops.lighter(A,B)
         Diff = ImageChops.difference(AuB,B)
-        score = self.Same(Diff,C)
+        score = self.same(Diff, C)
         return score, 0
 
-    def AddcumSub(self,A,B,C):
+    def addcum_sub(self, A, B, C):
         add = ImageChops.lighter(A,B)
         comm = ImageChops.darker(A,B)
         Diff = ImageChops.difference(add,comm)
-        score = self.Same(Diff,C)
+        score = self.same(Diff, C)
         return score, 0
 
-    def Common(self,A,B,C):
+    def common(self, A, B, C):
         common = ImageChops.darker(A,B)
-        score = self.Same(common,C)
+        score = self.same(common, C)
         return score, 0
 
-    def Migration(self,A,B,C):
+    def migration(self, A, B, C):
         #Horizontal migration
         #A super transformation where blobs in A from their end migrate to pos in C in the other end via B
         if self.IMAGE_WIDTH == 0 or self.IMAGE_HEIGHT == 0:
@@ -192,7 +190,7 @@ class TransformFinder:
                     migCol[b.id] = migCol[b.id]+migDir[b.id]
                     newImage.paste(croppedBlobs[b.id],(migCol[b.id],b.startRow))
                     migImage = ImageChops.lighter(migImage,newImage)
-                score = self.Similarity(migImage,B)
+                score = self.similarity(migImage, B)
                 if score >= 98:
                     ABscore = score
                     break
@@ -205,7 +203,7 @@ class TransformFinder:
                         migCol[b.id] = migCol[b.id]+migDir[b.id]
                         newImage.paste(croppedBlobs[b.id],(migCol[b.id],b.startRow))
                         migImage = ImageChops.lighter(migImage,newImage)
-                    score = self.Similarity(migImage,C)
+                    score = self.similarity(migImage, C)
                     if score >= 96:
                         BCscore = score
                         break
@@ -236,7 +234,7 @@ class TransformFinder:
                         migCol[b.id] = migCol[b.id]+migDir[b.id]
                         newImage.paste(croppedBlobs[b.id],(b.startCol,migCol[b.id]))
                         migImage = ImageChops.lighter(migImage,newImage)
-                    score = self.Similarity(migImage,B)
+                    score = self.similarity(migImage, B)
                     if score >= 98:
                         ABscore = score
                         break
@@ -249,62 +247,62 @@ class TransformFinder:
                             migCol[b.id] = migCol[b.id]+migDir[b.id]
                             newImage.paste(croppedBlobs[b.id],(b.startCol,migCol[b.id]))
                             migImage = ImageChops.lighter(migImage,newImage)
-                        score = self.Similarity(migImage,C)
+                        score = self.similarity(migImage, C)
                         if score >= 96:
                             BCscore = score
                             break
         #migImage.save(str(time.time())+"_BC.png","PNG")
         return (ABscore+BCscore)/2, ABscore, BCscore
 
-    def Divergence(self,A,B,C):
+    def divergence(self, A, B, C):
         #A super transformation where object in A splits into two
-        ABscore, ABloc, ABlor, ABroc, ABror = self.RepetitionByTranslation(A,B)
-        ACscore, ACloc, AClor, ACroc, ACror = self.RepetitionByTranslation(A,C)
+        ABscore, ABloc, ABlor, ABroc, ABror = self.repetition_by_translation(A, B)
+        ACscore, ACloc, AClor, ACroc, ACror = self.repetition_by_translation(A, C)
         if abs(ABscore-ACscore)<3:
             return (ABscore+ACscore)/2, ABscore, ACscore
         return 0,0,0
 
-    def Convergence(self,A,B,C):
+    def convergence(self, A, B, C):
         #A super transformation where objects in A merge into one
-        return self.Divergence(C,B,A)
+        return self.divergence(C, B, A)
 
-    def ConstantAddition(self,A,B,C):
-        if self.Similarity(ImageChops.lighter(A,B),B)>99:
+    def constant_addition(self, A, B, C):
+        if self.similarity(ImageChops.lighter(A, B), B)>99:
             AminusB = ImageChops.difference(A,B)
-            ABAdditionArea = self.getFillPercentage(AminusB,0,0,AminusB.width,AminusB.height)
-            if self.Similarity(ImageChops.lighter(B,C),C)>99:
+            ABAdditionArea = self.get_fill_percentage(AminusB, 0, 0, AminusB.width, AminusB.height)
+            if self.similarity(ImageChops.lighter(B, C), C)>99:
                 BminusC = ImageChops.difference(B,C)
-                BCAdditionArea = self.getFillPercentage(BminusC,0,0,BminusC.width,BminusC.height)
+                BCAdditionArea = self.get_fill_percentage(BminusC, 0, 0, BminusC.width, BminusC.height)
                 score = 0
                 #print("In Const Add:")
                 #print("AB Added area:"+str(ABAdditionArea))
                 #print("BC Added area:"+str(BCAdditionArea))
                 if ABAdditionArea > 1 and BCAdditionArea > 1:
                     if abs(ABAdditionArea - BCAdditionArea) < 4:
-                        similarity = self.Similarity(C,ImageChops.lighter(B,ImageChops.difference(B,C)))
+                        similarity = self.similarity(C, ImageChops.lighter(B, ImageChops.difference(B, C)))
                         score = similarity
                 return  score, ABAdditionArea, BCAdditionArea
         return 0,0,0
 
-    def ConstantSubtraction(self,A,B,C):
-        score, BCSubArea, ABSubArea = self.ConstantAddition(C,B,A)
+    def constant_subtraction(self, A, B, C):
+        score, BCSubArea, ABSubArea = self.constant_addition(C, B, A)
         """
         AminusB = ImageChops.difference(A,B)
-        ABSubArea = self.getFillPercentage(AminusB,0,0,AminusB.width,AminusB.height)
+        ABSubArea = self.get_fill_percentage(AminusB,0,0,AminusB.width,AminusB.height)
         BminusC = ImageChops.difference(B,C)
-        BCSubArea = self.getFillPercentage(BminusC,0,0,BminusC.width,BminusC.height)
+        BCSubArea = self.get_fill_percentage(BminusC,0,0,BminusC.width,BminusC.height)
         score = 0
         #print("In Const Sub:")
         #print("AB Sub area:"+str(ABSubArea))
         #print("BC Sub area:"+str(BCSubArea))
         if ABSubArea > 1 and BCSubArea > 1:
             if abs(ABSubArea - BCSubArea) < 4:
-                similarity = self.Similarity(B,ImageChops.lighter(C,ImageChops.difference(B,C)))
+                similarity = self.similarity(B,ImageChops.lighter(C,ImageChops.difference(B,C)))
                 score = similarity
         """
         return  score, ABSubArea, BCSubArea
 
-    def ScalingOfOneObject(self,corresp, BlobsA, BlobsB):
+    def scaling_of_one_object(self, corresp, BlobsA, BlobsB):
         widthScaling = 0
         heightScaling = 0
         score = 0
@@ -317,18 +315,18 @@ class TransformFinder:
                     score = 99
         return score, widthScaling, heightScaling
 
-    def TranslationOfOneObject(self,corresp, BlobsA, BlobsB):
+    def translation_of_one_object(self, corresp, BlobsA, BlobsB):
         data = []
         score = 0
         for k,v in corresp.items():
-            colOffset, rowOffset = self.GetBlobOffset(BlobsA[k],BlobsB[v[0][0]])
+            colOffset, rowOffset = self.get_blob_offset(BlobsA[k], BlobsB[v[0][0]])
             if colOffset<-1 or colOffset>1 or rowOffset<-1 or rowOffset>1:
                 data.append((k,v[0][0],colOffset,rowOffset))
         if len(data)>0:
             score = 99
         return score,data
 
-    def GetBlobOffset(self,a,b):
+    def get_blob_offset(self, a, b):
         colOffset = b.startCol - a.startCol
         rowOffset = b.startRow - a.startRow
         return colOffset, rowOffset
@@ -350,30 +348,8 @@ class TransformFinder:
         blobCountDifference = len(bb)-len(ba)
         metaData= {'repetition':repetition,'fillComparison':fillPercentage,'oneToOne':oneToOne,'blobCountDifference':blobCountDifference}
         return metaData
-    """
-    def RepetitionByCircularTranslation(self,A,B):
-        #get trans details
-        score = 0
-        angle = 0
-        aid = 0
-        bid = 0
-        for Aid, vals in corresp.items():
-            if len(vals)>1:
-                for t in vals[:]:
-                    #for circular the start row and start col should be diff => the minDiff would be atlest 2
-                    if t[1] >= 2:
-                        Bid = t[0]
-                s,ang = self.checkCircularTranslation(BlobsA[Aid], BlobsB[Bid])
-                if s>score:
-                    score = s
-                    angle = ang
-                    aid = Aid
-                    bid = Bid
-        #give them as blob frames
-        details = score, angle, aid, bid, BlobsA, BlobsB
-        return details
-    """
-    def checkCircularTranslation(self, blobA, blobB):
+
+    def check_circular_translation(self, blobA, blobB):
         centerRow = self.IMAGE_HEIGHT/2
         centerCol = self.IMAGE_WIDTH/2
         aCenter = ((blobA.startCol+blobA.endCol)/2,(blobA.startRow+blobA.endRow)/2)
@@ -408,7 +384,7 @@ class TransformFinder:
                     return 100, angle
         return 0,0
 
-    def GetBlobCorrespondence(self,BlobsA, BlobsB):
+    def get_blob_correspondence(self, BlobsA, BlobsB):
         MAX_DIFF = 6
         ba = BlobsA
         bb = BlobsB
@@ -423,7 +399,7 @@ class TransformFinder:
             corBlobId = 0
             blobPairInfo = BlobPairInfo()
             for a in ba[:]:
-                s,info = self.getBlobSimilarityScoreAndInfo(b,a)
+                s,info = self.get_blob_similarity_score_and_info(b, a)
                 if s<=minDiff:
                     if s<MAX_DIFF or info.iCenter:
                         minDiff = s
@@ -440,66 +416,52 @@ class TransformFinder:
         DeletionCount = notAssignedABlobs
         return corresp, AdditionCount, DeletionCount
 
-    def getBlobSimilarityScoreAndInfo(self,b,a):
+    def get_blob_similarity_score_and_info(self, b, a):
         score = 0
         info = BlobPairInfo()
-        '''if b.startCol < a.startCol-1 or b.startCol > a.startCol+1:
-            score = score + 1
-        if b.startRow < a.startRow-1 or b.startRow > a.startRow+1:
-            score = score + 1
-        if b.width < a.width -1 or b.width > a.width +1:
-            score = score + 1
-        if b.height < a.height -1 or b.height > a.height +1:
-            score = score + 1
-        #if b.fill < a.fill-2 or b.fill > a.fill+2:
-        #    score = score + 1
-        '''
-        if self.isInRange(b.startCol,a.startCol,1):
+        if self.is_in_range(b.startCol, a.startCol, 1):
             info.iStartCol = True
         else:
             score += 1
-        if self.isInRange(b.startRow,a.startRow,1):
+        if self.is_in_range(b.startRow, a.startRow, 1):
             info.iStartRow = True
         else:
             score += 1
-        if self.isInRange(b.width,a.width,1):
+        if self.is_in_range(b.width, a.width, 1):
             info.iWidth = True
         else:
             score += 1
-        if self.isInRange(b.height,a.height,1):
+        if self.is_in_range(b.height, a.height, 1):
             info.iHeight = True
         else:
             score += 1
-        if self.isInRange(b.fill,a.fill,0.011):#0.004
+        if self.is_in_range(b.fill, a.fill, 0.011):#0.004
             info.iFill = True
         else:
             score += 1
-        if self.isInRange(b.filledPixels, a.filledPixels,42):#change can be .5 percentage #42#34#22
-            #if not self.isInRange(b.filledPixels,a.filledPixels,a.width*a.height*0.005):
-            #   print("b fp: "+str(b.filledPixels)+" a fp:"+str(a.filledPixels)+" cond:"+str(a.width*a.height*0.005))
-            #   print("a wh"+str(a.width)+","+str(a.height))
+        if self.is_in_range(b.filledPixels, a.filledPixels, 42):#change can be .5 percentage #42#34#22
             info.iFilledPixels = True
         else:
             score += 1
-        if self.isInRange(b.startCol+b.width/2,a.startCol+a.width/2, 5):
-            if self.isInRange(b.startRow+b.height/2,a.startRow+a.height/2, 5):
+        if self.is_in_range(b.startCol + b.width / 2, a.startCol + a.width / 2, 5):
+            if self.is_in_range(b.startRow + b.height / 2, a.startRow + a.height / 2, 5):
                 info.iCenter = True
         return score, info
 
-    def isInRange(self,p,q,range):
+    def is_in_range(self, p, q, range):
         if p <= q+range and p >= q-range:
             return True
         else:
             return False
 
-    def showBlobs(self,A,BlobsA):
+    def show_blobs(self, A, BlobsA):
         ad = ImageDraw.Draw(A,"1")
         for ba in BlobsA[:]:
             ad.rectangle([ba.startCol,ba.startRow,ba.endCol,ba.endRow], None, "blue")
         del ad
         A.show()
 
-    def GetBlobs(self,A):
+    def get_blobs(self, A):
         imgD = A.copy()
         img1 = imgD.getdata()
         img = list(imgD.getdata())
@@ -536,14 +498,14 @@ class TransformFinder:
             b.width = b.endCol - b.startCol + 1
             b.height = b.endRow - b.startRow + 1
             b.filledPixels = filledPixels
-            b.fill = filledPixels/(b.width*b.height)#self.getFillPercentage(A,b.startCol,b.startRow,b.endCol,b.endRow)
+            b.fill = filledPixels/(b.width*b.height)#self.get_fill_percentage(A,b.startCol,b.startRow,b.endCol,b.endRow)
             Blobs.append(b)
             id = id + 1
             img1.putdata(img)
             bbox = img1.getbbox()
         return Blobs
 
-    def getFillPercentage(self,img,sc,sr,ec,er):
+    def get_fill_percentage(self, img, sc, sr, ec, er):
         pixels = img.crop((sc,sr,ec,er)).getdata()
         whitePixelCount = 0
         for pixel in pixels:
@@ -579,42 +541,23 @@ class TransformFinder:
                             sc = c+j
         return sr,sc, er, ec, img, filledPixels
 
-    def RepetitionByTranslation(self,A,B):
-        #a = A.copy()
-        #b = B.copy()
+    def repetition_by_translation(self, A, B):
         s = A.getbbox()
         f = B.getbbox()
-        """
-        sd = ImageDraw.Draw(a,"1")
-        sd.rectangle([s[0]-5,s[1]-5,s[2]+5,s[3]+5], None, "blue")
-        del sd
-        a.show()
-        fd = ImageDraw.Draw(b,"1")
-        fd.rectangle([f[0]-5,f[1]-5,f[2]+5,f[3]+5], None, "blue")
-        del fd
-        b.show()
-        """
-        if f!=None and s!=None:
+        if f != None and s != None:
             left_offset_col = f[0] - s[0]
-            #Get first active pixel from left
-            sLRow = self.getFirstActiveRowInCol(A, s[1], s[3], s[0])
-            fLRow = self.getFirstActiveRowInCol(B, f[1], f[3], f[0])
-            #left_offset_row = f[1] - s[1]
+            sLRow = self.get_first_active_row_in_col(A, s[1], s[3], s[0])
+            fLRow = self.get_first_active_row_in_col(B, f[1], f[3], f[0])
             left_offset_row = fLRow - sLRow
             if abs(left_offset_col) > 5 or abs(left_offset_row) > 5:
-                A1 = ImageChops.offset(A,left_offset_col,left_offset_row)
-
+                A1 = ImageChops.offset(A, left_offset_col, left_offset_row)
                 right_offset_col = f[2] - s[2]
-                #Get first active pixel from right
-                sRRow = self.getLastActiveRowInCol(A, s[1], s[3], s[2]-1)
-                fRRow = self.getLastActiveRowInCol(B, f[1], f[3], f[2]-1)
+                sRRow = self.get_last_active_row_in_col(A, s[1], s[3], s[2] - 1)
+                fRRow = self.get_last_active_row_in_col(B, f[1], f[3], f[2] - 1)
                 right_offset_row = fRRow - sRRow
-                #right_offset_row = f[3] - s[3]
                 A2 = ImageChops.offset(A,right_offset_col,right_offset_row)
                 ADash = ImageChops.lighter(A1, A2)
-                #ADash.save("adash.png","PNG")
-                #B.save("b.png","PNG")
-                score = self.Similarity(ADash,B)
+                score = self.similarity(ADash, B)
                 details = score, left_offset_col, left_offset_row, right_offset_col, right_offset_row
                 return details
             else:
@@ -624,7 +567,7 @@ class TransformFinder:
             details = 0,0,0,0,0
             return details
 
-    def getFirstActiveRowInCol(self,image, startRow, endRow, col):
+    def get_first_active_row_in_col(self, image, startRow, endRow, col):
         img = list(image.getdata())
         aRow = startRow
         for i in range(startRow,endRow+1):
@@ -633,7 +576,7 @@ class TransformFinder:
                 break
         return aRow
 
-    def getLastActiveRowInCol(self,image, startRow, endRow, col):
+    def get_last_active_row_in_col(self, image, startRow, endRow, col):
         img = list(image.getdata())
         aRow = endRow
         for i in reversed(range(startRow,endRow+1)):
@@ -642,7 +585,7 @@ class TransformFinder:
                 break
         return aRow
 
-    def RepetitionByExpansion(self,A,B):
+    def repetition_by_expansion(self, A, B):
         compA = A.getbbox()
         compB = B.getbbox()
         score = 0
@@ -657,18 +600,18 @@ class TransformFinder:
         details = score, xGrowth, yGrowth
         return details
 
-    def Same(self,A,B):
+    def same(self, A, B):
         #returns the percentage of similarity
         highestScore = 0
         for i in range(-6,7,2):
             for j in range(-6,7,2):
                 B1 = ImageChops.offset(B,i,j)
-                s = self.Similarity(A,B1)
+                s = self.similarity(A, B1)
                 if s>highestScore:
                     highestScore = s
         return highestScore
 
-    def Similarity(self,A,B):
+    def similarity(self, A, B):
         diff = ImageChops.difference(A,B)
         pixels = diff.getdata()
         whitePixelCount = 0
@@ -688,17 +631,22 @@ class TransformationFrame:
         self.BlobCorresp = {}
         self.BlobMetaData = {}
         self.blobFrames = []
+
     def assignTxScore(self,transType, details):
         self.txScores[transType] = details[0]
         if self.txScores[self.txType] < details[0]:
             self.txType = transType
             self.txDetails = details[1:]
+
     def getHighestScore(self):
         return self.txScores[self.txType]
+
     def getBestTransformation(self):
         return self.txType
+
     def getBestTxDetails(self):
         return self.txDetails
+
     def setBestTxDetails(self,details):
         self.txDetails = details
 

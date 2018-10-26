@@ -8,7 +8,7 @@ class Blob:
         self.width = w
         self.height = h
         self.fill = f
-        self.filledPixels = p;
+        self.filledPixels = p
 
 class BlobPairInfo:
     def __init__(self):
@@ -27,7 +27,7 @@ class BlobPairInfo:
                 return True
         #check if this elif is needed
         #elif self.isTranslated() and not self.iFill and not self.iFilledPixels:
-         #   return True
+        #   return True
         return False
 
     def isSame(self):
@@ -66,16 +66,6 @@ class Transformation:
     Subtraction = 15
     AddcumSub = 16
     Common = 17
-    """
-    ShapeChange = 0
-    Translate = 1
-    Scale = 2
-    Rotate = 3
-    Fill = 4
-    Reflect = 5
-    NoChange = 6
-    Delete = 7
-    """
 
 class Attribute:
     inside = 1
