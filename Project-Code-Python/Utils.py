@@ -1,58 +1,9 @@
-class Blob:
-    def __init__(self,i=0,r=0,c=0,w=0,h=0,f=0, p=0):
-        self.id = i
-        self.startRow = r
-        self.startCol = c
-        self.endRow = r + h
-        self.endCol = c + w
-        self.width = w
-        self.height = h
-        self.fill = f
-        self.filledPixels = p
-
-class BlobPairInfo:
-    def __init__(self):
-        self.iFill = False
-        self.iFilledPixels = False
-        self.iStartRow = False
-        self.iStartCol = False
-        self.iWidth = False
-        self.iHeight = False
-        self.iCenter = False
-
-    def isMorph(self):
-        #if self.iStartCol and self.iStartRow and self.iWidth and self.iHeight:
-        if self.iCenter:
-            if not self.iFill and not self.iFilledPixels: #and was previously used
-                return True
-        #check if this elif is needed
-        #elif self.isTranslated() and not self.iFill and not self.iFilledPixels:
-        #   return True
-        return False
-
-    def isSame(self):
-        if self.iStartRow and self.iStartCol and self.iWidth and self.iHeight and self.iFilledPixels and self.iFill:#
-            return True
-        return False
-
-    def isTranslated(self):
-        if (self.iStartRow and not self.iStartCol) or (not self.iStartRow and self.iStartCol) or (not self.iStartRow and not self.iStartCol):
-            if not self.iCenter:
-                return True
-        return False
-
-    def isScaled(self):
-        if self.iCenter and self.iFill and (not self.iWidth or not self.iHeight):
-            return True
-        return False
-
-
+#Utils classes for storing all enum data which specifies the transformation type and metrics
 class Transformation:
     Empty = 0
     Same = 12
-    RepetitionByExpansion = 1 #aka scaling or expansion
-    RepetitionByTranslation = 2
-    RepetitionByCircularTranslation = 3
+    Expansion = 1
+    Translation = 2
     TranslationOfOneObject = 4
     ScalingOfOneObject = 5
     ConstantAddition = 6
@@ -148,3 +99,52 @@ class Conversion:
 
     def toString(self):
         return self.TransformationType.name+":"+self.InitialState+":"+self.FinalState
+
+
+class Blob:
+    def __init__(self,i=0,r=0,c=0,w=0,h=0,f=0, p=0):
+        self.id = i
+        self.startRow = r
+        self.startCol = c
+        self.endRow = r + h
+        self.endCol = c + w
+        self.width = w
+        self.height = h
+        self.fill = f
+        self.filledPixels = p
+
+class BlobPairInfo:
+    def __init__(self):
+        self.iFill = False
+        self.iFilledPixels = False
+        self.iStartRow = False
+        self.iStartCol = False
+        self.iWidth = False
+        self.iHeight = False
+        self.iCenter = False
+
+    def isMorph(self):
+        #if self.iStartCol and self.iStartRow and self.iWidth and self.iHeight:
+        if self.iCenter:
+            if not self.iFill and not self.iFilledPixels: #and was previously used
+                return True
+        #check if this elif is needed
+        #elif self.isTranslated() and not self.iFill and not self.iFilledPixels:
+        #   return True
+        return False
+
+    def isSame(self):
+        if self.iStartRow and self.iStartCol and self.iWidth and self.iHeight and self.iFilledPixels and self.iFill:#
+            return True
+        return False
+
+    def isTranslated(self):
+        if (self.iStartRow and not self.iStartCol) or (not self.iStartRow and self.iStartCol) or (not self.iStartRow and not self.iStartCol):
+            if not self.iCenter:
+                return True
+        return False
+
+    def isScaled(self):
+        if self.iCenter and self.iFill and (not self.iWidth or not self.iHeight):
+            return True
+        return False

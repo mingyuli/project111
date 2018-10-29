@@ -22,10 +22,7 @@ class Agent:
     # Do not add any variables to this signature; they will not be used by
     # main().
     def __init__(self):
-        sys.setrecursionlimit(10000)
-        self.problem_number = 0
-        self.DEBUG = False
-        self.debugLevel = 1
+        pass
 
     # The primary method for solving incoming Raven's Progressive Matrices.
     # For each problem, your Agent's Solve() method will be called. At the
@@ -53,8 +50,6 @@ class Agent:
     def Solve(self, problem):
         problem_definition = DefinitionProblem()
         answer = -1
-        self.problem_number += 1
-        print("Solving " + str(self.problem_number))
         # Solve 2x2 problems for Project 1
         if problem_definition.is_twobytwo_problem(problem):
             answer = TwoByTwoSolver(problem).do_basic_analysis()
@@ -67,7 +62,6 @@ class Agent:
         elif problem_definition.is_threebythree_problem(problem):
             answer = ThreeByThreeSolver(problem).find_solution()
 
-        print(" Solution:" + str(answer))
         return answer
 
 
@@ -589,14 +583,14 @@ class ThreeByThreeSolver:
 
         # Diagnal vs Hor_Vert
         if self.diag_vs_hor_vert(best_txs_diag, best_txs_hor) == 'Diagonal':
-            diag_tx_solution_set = self.compare_and_getSolution(A, E, best_txs_diag,
-                                                                answerChoices)  # type: List[Union[Tuple[Union[int, Any], Any], Tuple[Union[int, Any], int]]]
+            diag_tx_solution_set = self.get_solution(A, E, best_txs_diag,
+                                                     answerChoices)  # type: List[Union[Tuple[Union[int, Any], Any], Tuple[Union[int, Any], int]]]
             answer = self.get_best_solution(diag_tx_solution_set)
         else:
-            hor_tx_solution_set = self.compare_and_getSolution(G, H, best_txs_hor, answerChoices)
+            hor_tx_solution_set = self.get_solution(G, H, best_txs_hor, answerChoices)
             # Ordering of transformations
             best_txs_ver = self.get_best_transformations(tx_vertical)
-            ver_tx_solution_set = self.compare_and_getSolution(C, F, best_txs_ver, answerChoices, hor_tx_solution_set)
+            ver_tx_solution_set = self.get_solution(C, F, best_txs_ver, answerChoices, hor_tx_solution_set)
             # Analysing solution set
             answer = self.analyse_solution_set(hor_tx_solution_set, ver_tx_solution_set)
         return answer
@@ -673,7 +667,7 @@ class ThreeByThreeSolver:
                     BestTxsList.append([BestTxType, BestTxScore, BestTxDetails])
         return BestTxsList
 
-    def compare_and_getSolution(self, G, H, BestTx, answerChoices, HorSolSet=None):
+    def get_solution(self, G, H, BestTx, answerChoices, HorSolSet=None):
         choices = []
         choices.append(0)
         for option in answerChoices:
@@ -687,123 +681,91 @@ class ThreeByThreeSolver:
             ToCheckChoices = []
             for k in HorSolSet[:]:
                 ToCheckChoices.append(k[0])
-        solSet = []
+        solutionSet = []
         for t in BestTx[:]:
             BestTxType = t[0]
             BestTxScore = t[1]
             BestTxDetails = t[2]
             if solution == -1:
                 for i in ToCheckChoices[:]:
-                    # print("Checking ans "+str(i))
                     if BestTxType == Transformation.Same:
-                        # print("Checking Tx Empty")
                         score = Tx.same(H, choices[i])
-                        # print("Scores:"+str(score)+":"+str(BestTxScore))
                         if score > 97:
                             # if self.almost_equal(score,BestTxScore,2):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.ConstantAddition:
-                        # print("Checking Const addition")
                         score, GHAddArea, HIAddArea = Tx.constant_addition(G, H, choices[i])
-                        # print("Scores:"+str(score)+":"+str(BestTxScore))
-                        # print("GHAddarea:"+str(GHAddArea)+" org:"+str(BestTxDetails[0]))
-                        # print("HIAddarea:"+str(HIAddArea)+" org:"+str(BestTxDetails[1]))
                         if self.almost_equal(score, BestTxScore, 1):
                             if self.almost_equal(HIAddArea, BestTxDetails[1], 1):
                                 solution = i
-                                solSet.append((i, self.get_deviation(score, BestTxScore)))
+                                solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.ConstantSubtraction:
-                        # print("Checking Const sub")
                         score, GHSubArea, HISubArea = Tx.constant_subtraction(G, H, choices[i])
-                        # print("Scores:"+str(score)+":"+str(BestTxScore))
-                        # print("GHSubarea:"+str(GHSubArea)+" org:"+str(BestTxDetails[0]))
-                        # print("HISubarea:"+str(HISubArea)+" org:"+str(BestTxDetails[1]))
                         if self.almost_equal(score, BestTxScore, 1):
                             if self.almost_equal(HISubArea, BestTxDetails[1], 1):
                                 solution = i
-                                solSet.append((i, self.get_deviation(score, BestTxScore)))
+                                solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.Addition:
                         score, z = Tx.addition(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 1):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.Subtraction:
                         score, z = Tx.subtraction(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 1):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.AddcumSub:
                         score, z = Tx.addcum_sub(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 5):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.Common:
                         score, z = Tx.common(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.Divergence:
-                        # print("Checking divergence")
                         score, GHScore, GIScore = Tx.divergence(G, H, choices[i])
-                        # print(str(BestTxScore)+","+str(BestTxDetails[0])+","+str(BestTxDetails[1]))
-                        # print(str(score)+","+str(GHScore)+","+str(GIScore))
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.Convergence:
-                        # print("Checking convergence")
                         score, GHScore, GIScore = Tx.convergence(G, H, choices[i])
-                        # print(str(BestTxScore)+","+str(BestTxDetails[0])+","+str(BestTxDetails[1]))
-                        # print(str(score)+","+str(GHScore)+","+str(GIScore))
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.Migration:
                         Tx.BlobsC = Tx.get_blobs(choices[i])
                         correspGI = Tx.get_blob_correspondence(Tx.BlobsA, Tx.BlobsC)
-                        GIMetaData = Tx.GetBlobMetaData(correspGI, Tx.BlobsA, Tx.BlobsC)
+                        GIMetaData = Tx.get_blob_meta_data(correspGI, Tx.BlobsA, Tx.BlobsC)
                         if GIMetaData['repetition'] == False and GIMetaData['oneToOne'] == True:
-                            # print("Checking migration")
                             score, GHScore, GIScore = Tx.migration(G, H, choices[i])
-                            # print(str(BestTxScore)+","+str(BestTxDetails[0])+","+str(BestTxDetails[1]))
-                            # print(str(score)+","+str(GHScore)+","+str(GIScore))
                             if self.almost_equal(score, BestTxScore, 1):
                                 solution = i
-                                solSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.RepetitionByExpansion:
-                        # print("Checking Rept by Exp")
+                                solutionSet.append((i, self.get_deviation(score, BestTxScore)))
+                    elif BestTxType == Transformation.Expansion:
                         score, xgrowth, ygrowth = Tx.repetition_by_expansion(H, choices[i])
-                        # print("Scores:"+str(score)+":"+str(BestTxScore))
                         if self.almost_equal(score, BestTxScore, 1):
                             if self.almost_equal(xgrowth, BestTxDetails[0], 1):
                                 if self.almost_equal(ygrowth, BestTxDetails[1], 1):
                                     solution = i
-                                    solSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.RepetitionByTranslation:
-                        # print("Checking Rept by Trans")
+                                    solutionSet.append((i, self.get_deviation(score, BestTxScore)))
+                    elif BestTxType == Transformation.Translation:
                         score, leftOffsetCol, leftOffsetRow, rightOffsetCol, rightOffsetRow = Tx.repetition_by_translation(
                             H, choices[i])
-                        # print("Scores:"+str(score)+":"+str(BestTxScore))
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
-                            solSet.append((i, self.get_deviation(score, BestTxScore)))
+                            solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.BlobTransforms:
-                        self.dprint(1, "Checking Blob Transforms")
                         BlobsG = Tx.BlobsA
                         BlobsH = Tx.BlobsB
-                        # self.show_blobs(A,BlobsA)
                         BlobsI = Tx.get_blobs(choices[i])
-                        #                   0                           4                   6                   7
-                        # details contains (same,morph,translate,scale,addition,deletion,blobCountDiffernce,morph pattern)
                         GHcorresp, GHadditionCount, GHdeletionCount = Tx.get_blob_correspondence(BlobsG, BlobsH)
                         HIcorresp, HIadditionCount, HIdeletionCount = Tx.get_blob_correspondence(BlobsH, BlobsI)
-                        HIBlobMetaData = Tx.GetBlobMetaData(HIcorresp, BlobsH, BlobsI)
+                        HIBlobMetaData = Tx.get_blob_meta_data(HIcorresp, BlobsH, BlobsI)
                         HInumberMorphed = 0
-                        # if HIadditionCount==HIdeletionCount:
-                        #    HInumberMorphed = HIadditionCount
-                        #    HIadditionCount =0
-                        #    HIdeletionCount =0
                         if BestTxDetails[4] == HIadditionCount and BestTxDetails[5] == HIdeletionCount:
                             if HIBlobMetaData['repetition'] == False:
                                 if len(HIcorresp.keys()) >= 1:
@@ -816,18 +778,13 @@ class ThreeByThreeSolver:
                                         GIcorresp, GIadditionCount, GIdeletionCount = Tx.get_blob_correspondence(BlobsG,
                                                                                                                  BlobsI)
                                         GInumberMorphed = 0
-                                        # if GIadditionCount==GIdeletionCount:
-                                        #    GInumberMorphed = HIadditionCount
-                                        #    GIadditionCount =0
-                                        #    GIdeletionCount =0
                                         GIscore, GIsameCount, GImorphCount, GItranslationCount, GIscalingCount = Tx.blob_transforms(
                                             GIcorresp, BlobsG, BlobsI)
                                         GImorphCount += GInumberMorphed
                                         if HImorphCount == GImorphCount:
                                             if BestTxDetails[1] == HImorphCount and BestTxDetails[2] == HItranslationCount and BestTxDetails[3] == HIscalingCount:
-                                                # BestTxDetails[0] == sameCount and
                                                 solution = i
-                                                solSet.append((i, self.get_deviation(HIscore,
+                                                solutionSet.append((i, self.get_deviation(HIscore,
                                                                                      BestTxScore) + self.get_blob_corresp_deviation(
                                                     BlobsG, BlobsH, BlobsI, GHcorresp, HIcorresp)))
                                     else:
@@ -835,7 +792,7 @@ class ThreeByThreeSolver:
                                         if BestTxDetails[1] == HImorphCount and BestTxDetails[2] == HItranslationCount and BestTxDetails[3] == HIscalingCount:
                                             # BestTxDetails[0] == sameCount and
                                             solution = i
-                                            solSet.append((i, self.get_deviation(HIscore,
+                                            solutionSet.append((i, self.get_deviation(HIscore,
                                                                                  BestTxScore) + self.get_blob_corresp_deviation(
                                                 BlobsG, BlobsH, BlobsI, GHcorresp, HIcorresp)))
 
@@ -849,81 +806,63 @@ class ThreeByThreeSolver:
                                                                                                             hAvgFill,
                                                                                                             0.1):
                                     solution = i
-                                    # solSet.append((i,100-(50*abs(gAvgFill-iAvgFill)+50*abs(hAvgFill-iAvgFill))))
-                                    solSet.append((i, 0))
+                                    solutionSet.append((i, 0))
                     elif BestTxType == Transformation.ScalingOfOneObject:
-                        # print("Chekcing scaling of one obj")
                         BlobsH = Tx.BlobsB
                         BlobsI = Tx.get_blobs(choices[i])
                         corresp, HIadditionCount, HIdeletionCount = Tx.get_blob_correspondence(BlobsH, BlobsI)
-                        BlobMetaData = Tx.GetBlobMetaData(HIcorresp, BlobsH, BlobsI)
+                        BlobMetaData = Tx.get_blob_meta_data(HIcorresp, BlobsH, BlobsI)
                         score, widthScale, heightScale = Tx.scaling_of_one_object(corresp, BlobsH, BlobsI)
-                        # print("Scores:"+str(score)+":"+str(BestTxScore))
-                        # print("Width scale:"+str(widthScale)+":"+str(BestTxDetails[0]))
-                        # print("Height scale:"+str(heightScale)+":"+str(BestTxDetails[1]))
                         if self.almost_equal(score, BestTxScore, 1):
                             if self.almost_equal(widthScale, BestTxDetails[0], 0.5):
                                 if self.almost_equal(heightScale, BestTxDetails[1], 0.5):
                                     diff = 0
                                     for t in BlobMetaData['fillComparison'][:]:
-                                        # print("t:"+str(t[2]))
                                         diff = diff + t[2]
-                                    # print("Diff:"+str(diff))
                                     if self.almost_equal(diff, 0, 3):
                                         solution = i
-                                        solSet.append((i, self.get_deviation(score, BestTxScore)))
+                                        solutionSet.append((i, self.get_deviation(score, BestTxScore)))
                     elif BestTxType == Transformation.TranslationOfOneObject:
                         BlobsH = Tx.BlobsB
                         BlobsI = Tx.get_blobs(choices[i])
                         corresp, HIadditionCount, HIdeletionCount = Tx.get_blob_correspondence(BlobsH, BlobsI)
-                        # BlobMetaData = Tx.GetBlobMetaData(HIcorresp, BlobsH, BlobsI)
-                        # print("Checking translation of 1 obj")
                         score, data = Tx.translation_of_one_object(corresp, BlobsH, BlobsI)
-                        # print("Scores:"+str(score)+":"+str(BestTxScore))
                         if self.almost_equal(score, BestTxScore, 2):
                             listOffsetOrg = []
                             listOffsetNew = []
-                            # print("org")
                             for t in BestTxDetails[:]:
                                 listOffsetOrg.append(t[0][2])
                                 listOffsetOrg.append(t[0][3])
-                                # print(":"+str(t[0][2])+","+str(t[0][3]))
-                            # print("new")
                             for t in data[:]:
                                 listOffsetNew.append(t[2])
                                 listOffsetNew.append(t[3])
-                                # print(":"+str(t[2])+","+str(t[3]))
                             listOffsetOrg.sort()
                             listOffsetNew.sort()
-                            # print(listOffsetOrg)
-                            # print(listOffsetNew)
                             diff = 0
                             for k in range(len(listOffsetOrg)):
-                                # print(str(listOffsetNew[k])+","+str(listOffsetOrg[k]))
                                 if self.almost_equal(listOffsetNew[k], listOffsetOrg[k], 2):
                                     pass
                                 else:
-                                    # print("added diff")
                                     diff = diff + 1
                             if diff == 0:
                                 solution = i
-                                solSet.append((i, self.get_deviation(score, BestTxScore)))
-        return solSet
+                                solutionSet.append((i, self.get_deviation(score, BestTxScore)))
+        return solutionSet
 
-    def analyse_solution_set(self, HorSolSet, VerSolSet):
-        if len(VerSolSet) == 0:
-            if len(HorSolSet) > 0:
-                return self.get_best_solution(HorSolSet)
+    def analyse_solution_set(self, horSet, verSet):
+        if len(verSet) == 0:
+            if len(horSet) > 0:
+                return self.get_best_solution(horSet)
             else:
                 return -1
         else:
-            return self.get_best_solution(VerSolSet)
+            return self.get_best_solution(verSet)
 
-    def get_best_solution(self, solSet):
-        if len(solSet) > 0:
-            solution = solSet[0][0]
-            minDeviation = solSet[0][1]
-            for t in solSet[:]:
+    def get_best_solution(self, solutionSet):
+        if len(solutionSet) > 0:
+            solution = solutionSet[0][0]
+            minDeviation = solutionSet[0][1]
+            for t in solutionSet[:]:
                 if t[1] <= minDeviation:
                     solution = t[0]
                     minDeviation = t[1]
@@ -956,58 +895,9 @@ class ThreeByThreeSolver:
         else:
             return False
 
-    def find_whole_transforms(self, A, B, C, D, E, F, G, H, answerChoices):
-        Tf = TransformFinder()
-        choices = []
-        choices.append(0)
-        for option in answerChoices:
-            choices.append(self.to_binary(option))
-        solution = -1
-        if solution == -1:
-            axb = ImageChops.logical_xor(A, B)
-            axbxc = ImageChops.logical_xor(axb, C)
-            dxe = ImageChops.logical_xor(D, E)
-            dxexf = ImageChops.logical_xor(dxe, F)
-            score = Tf.similarity(axbxc, dxexf)
-            if score > 96:
-                gxh = ImageChops.logical_xor(G, H)
-                for i in range(1, len(choices)):
-                    gxhxi = ImageChops.logical_xor(gxh, choices[i])
-                    s = Tf.similarity(axbxc, gxhxi)
-                    if s > 95:
-                        return i
-        return solution
-
     def to_binary(self, a):
         image_file = Image.open(a)
         image_file = image_file.convert('1')  # convert image to black and white
         image_file = ImageChops.invert(image_file)
         return image_file
 
-    def dprint(self, level, sent):
-        if self.DEBUG:
-            if level <= self.debugLevel:
-                print(sent)
-
-    def disp_tx(self, txs):
-        print("SuperTx:")
-        tx = txs[0]
-        print("=>" + str(tx.txType))
-        for k, v in tx.txScores.items():
-            print(str(k) + ":" + str(v))
-        print(str(tx.txDetails))
-        print("ImageTx")
-        for tx in txs[1]:
-            print("=>" + str(tx.txType))
-            for k, v in tx.txScores.items():
-                print(str(k) + ":" + str(v))
-            print(str(tx.txDetails))
-            print(".")
-        print("BlobTx")
-        for tx in txs[2]:
-            print("=>" + str(tx.txType))
-            for k, v in tx.txScores.items():
-                print(str(k) + ":" + str(v))
-            print(str(tx.txDetails))
-            print(".")
-        return

@@ -1,7 +1,6 @@
 from Utils import Transformation, Blob, BlobPairInfo
 from PIL import Image, ImageChops, ImageDraw
 from collections import deque, defaultdict
-import math
 
 class TransformFinder:
     def __init__(self):
@@ -81,7 +80,7 @@ class TransformFinder:
         Tx.assignTxScore(Transformation.Divergence, self.divergence(A, B, C))
         Tx.assignTxScore(Transformation.Convergence, self.convergence(A, B, C))
         correspAC, additionCnt, deletionCnt = self.get_blob_correspondence(self.BlobsA, self.BlobsC)
-        ACMetaData = self.GetBlobMetaData(correspAC,self.BlobsA,self.BlobsC)
+        ACMetaData = self.get_blob_meta_data(correspAC, self.BlobsA, self.BlobsC)
         if ACMetaData['repetition'] == False and ACMetaData['oneToOne'] == True:
             Tx.assignTxScore(Transformation.Migration, self.migration(A, B, C))
         return Tx
@@ -91,8 +90,8 @@ class TransformFinder:
         #Transformations (level 2)
         Tx.assignTxScore(Transformation.Same, (self.same(A, B), 0))
         if Tx.getHighestScore() < self.ThresholdScore:
-            Tx.assignTxScore(Transformation.RepetitionByExpansion, self.repetition_by_expansion(A, B))
-            Tx.assignTxScore(Transformation.RepetitionByTranslation, self.repetition_by_translation(A, B))
+            Tx.assignTxScore(Transformation.Expansion, self.repetition_by_expansion(A, B))
+            Tx.assignTxScore(Transformation.Translation, self.repetition_by_translation(A, B))
         #Tx.assignTxScore(Transformation.RepetitionByCircularTranslation,self.RepetitionByCircularTranslation(A,B))
         return Tx
 
@@ -101,7 +100,7 @@ class TransformFinder:
         Tx.Blobs.append(BlobsA)
         Tx.Blobs.append(BlobsB)
         Tx.corresp, additionsToBlobsB, deletionsInBlobsA = self.get_blob_correspondence(BlobsA, BlobsB)
-        Tx.BlobMetaData = self.GetBlobMetaData(Tx.corresp,BlobsA,BlobsB)
+        Tx.BlobMetaData = self.get_blob_meta_data(Tx.corresp, BlobsA, BlobsB)
         numberMorphed = 0
         #if  additionsToBlobsB==deletionsInBlobsA:
         #    numberMorphed = additionsToBlobsB
@@ -207,8 +206,7 @@ class TransformFinder:
                     if score >= 96:
                         BCscore = score
                         break
-            #migImage.save(str(time.time())+"_BC.png","PNG")
-            if ABscore>=98 and BCscore >= 96:
+            if ABscore >= 98 and BCscore >= 96:
                 return (ABscore+BCscore)/2, ABscore, BCscore
             else:
                 #vertical migration
@@ -251,7 +249,6 @@ class TransformFinder:
                         if score >= 96:
                             BCscore = score
                             break
-        #migImage.save(str(time.time())+"_BC.png","PNG")
         return (ABscore+BCscore)/2, ABscore, BCscore
 
     def divergence(self, A, B, C):
@@ -282,25 +279,11 @@ class TransformFinder:
                         similarity = self.similarity(C, ImageChops.lighter(B, ImageChops.difference(B, C)))
                         score = similarity
                 return  score, ABAdditionArea, BCAdditionArea
-        return 0,0,0
+        return 0, 0, 0
 
     def constant_subtraction(self, A, B, C):
         score, BCSubArea, ABSubArea = self.constant_addition(C, B, A)
-        """
-        AminusB = ImageChops.difference(A,B)
-        ABSubArea = self.get_fill_percentage(AminusB,0,0,AminusB.width,AminusB.height)
-        BminusC = ImageChops.difference(B,C)
-        BCSubArea = self.get_fill_percentage(BminusC,0,0,BminusC.width,BminusC.height)
-        score = 0
-        #print("In Const Sub:")
-        #print("AB Sub area:"+str(ABSubArea))
-        #print("BC Sub area:"+str(BCSubArea))
-        if ABSubArea > 1 and BCSubArea > 1:
-            if abs(ABSubArea - BCSubArea) < 4:
-                similarity = self.similarity(B,ImageChops.lighter(C,ImageChops.difference(B,C)))
-                score = similarity
-        """
-        return  score, ABSubArea, BCSubArea
+        return score, ABSubArea, BCSubArea
 
     def scaling_of_one_object(self, corresp, BlobsA, BlobsB):
         widthScaling = 0
@@ -318,10 +301,10 @@ class TransformFinder:
     def translation_of_one_object(self, corresp, BlobsA, BlobsB):
         data = []
         score = 0
-        for k,v in corresp.items():
+        for k, v in corresp.items():
             colOffset, rowOffset = self.get_blob_offset(BlobsA[k], BlobsB[v[0][0]])
             if colOffset<-1 or colOffset>1 or rowOffset<-1 or rowOffset>1:
-                data.append((k,v[0][0],colOffset,rowOffset))
+                data.append((k, v[0][0],colOffset,rowOffset))
         if len(data)>0:
             score = 99
         return score,data
@@ -331,7 +314,7 @@ class TransformFinder:
         rowOffset = b.startRow - a.startRow
         return colOffset, rowOffset
 
-    def GetBlobMetaData(self, correspondences, ba, bb):
+    def get_blob_meta_data(self, correspondences, ba, bb):
         repetition = False
         oneToOne = True
         fillPercentage = []
@@ -349,41 +332,6 @@ class TransformFinder:
         metaData= {'repetition':repetition,'fillComparison':fillPercentage,'oneToOne':oneToOne,'blobCountDifference':blobCountDifference}
         return metaData
 
-    def check_circular_translation(self, blobA, blobB):
-        centerRow = self.IMAGE_HEIGHT/2
-        centerCol = self.IMAGE_WIDTH/2
-        aCenter = ((blobA.startCol+blobA.endCol)/2,(blobA.startRow+blobA.endRow)/2)
-        bCenter = ((blobB.startCol+blobB.endCol)/2,(blobB.startRow+blobB.endRow)/2)
-        #aCenter = (blobA.startCol,blobA.startRow)
-        #bCenter = (blobB.startCol,blobB.startRow)
-
-        vecA = ((aCenter[0] - centerCol),(aCenter[1] - centerRow))
-        vecB = ((bCenter[0] - centerCol),(bCenter[1] - centerRow))
-
-        #normalized vectors
-        distA = math.sqrt(vecA[0]*vecA[0]+vecA[1]*vecA[1])
-        nVecA = (0,0)
-        if distA != 0:
-            nVecA = (vecA[0]/distA, vecA[1]/distA)
-
-        distB = math.sqrt(vecB[0]*vecB[0]+vecB[1]*vecB[1])
-        nVecB = (0,0)
-        if distB != 0:
-            nVecB = (vecB[0]/distB, vecB[1]/distB)
-        if nVecA == (0,0) or nVecB == (0,0):
-            return 0,0
-        else:
-            AdotB = nVecA[0]*nVecB[0] + nVecA[1]*nVecB[1]
-            #print("AdotB"+str(AdotB))
-            AdotB = max(-1,min(AdotB,1))
-            angle = math.acos(AdotB)
-            newVecA = (vecA[0]*math.cos(angle) - vecA[1]*math.sin(angle), vecA[0]*math.sin(angle) + vecA[1]*math.cos(angle))
-            newBpos = (newVecA[0]+centerCol, newVecA[1]+centerRow)
-            if newBpos[0] >= bCenter[0]-5 and newBpos[0] <= bCenter[0] + 5:
-                if newBpos[1] >= bCenter[1]-5 and newBpos[1] <= bCenter[1] + 5:
-                    return 100, angle
-        return 0,0
-
     def get_blob_correspondence(self, BlobsA, BlobsB):
         MAX_DIFF = 6
         ba = BlobsA
@@ -394,13 +342,13 @@ class TransformFinder:
         notAssignedABlobs = 0
         corresp = defaultdict(list)
         for b in bb[:]:
-            assigned = False;
-            minDiff = 99 #sum of attribute differences. attributes include start row, start col, width, height, fill
+            assigned = False
+            minDiff = 99
             corBlobId = 0
             blobPairInfo = BlobPairInfo()
             for a in ba[:]:
-                s,info = self.get_blob_similarity_score_and_info(b, a)
-                if s<=minDiff:
+                s, info = self.get_blob_similarity_score_and_info(b, a)
+                if s <= minDiff:
                     if s<MAX_DIFF or info.iCenter:
                         minDiff = s
                         corBlobId = a.id
@@ -478,19 +426,16 @@ class TransformFinder:
         id = 0
         bbox = img1.getbbox()
         while bbox!=None :
-            #print(bbox)
             r = bbox[1]
             c = bbox[0]
             while c <= bbox[2]:
                 if img[c + r*A.width] != 0:
-                    break;
-                c = c+1;
+                    break
+                c = c+1
             img[c + r*A.width] = 0
             b = Blob()
             b.id = id
-            #print("into fillBlob"+str(A.width))
-            sr, sc, er, ec, img, filledPixels = self.fillBlob(img,A.width,c,r)
-            #print("out of fillBlob"+str(er)+","+str(ec))
+            sr, sc, er, ec, img, filledPixels = self.fillBlob(img, A. width, c, r)
             b.startRow = sr
             b.startCol = sc
             b.endRow = er
@@ -498,7 +443,7 @@ class TransformFinder:
             b.width = b.endCol - b.startCol + 1
             b.height = b.endRow - b.startRow + 1
             b.filledPixels = filledPixels
-            b.fill = filledPixels/(b.width*b.height)#self.get_fill_percentage(A,b.startCol,b.startRow,b.endCol,b.endRow)
+            b.fill = filledPixels/(b.width*b.height)
             Blobs.append(b)
             id = id + 1
             img1.putdata(img)
@@ -625,9 +570,9 @@ class TransformFinder:
 class TransformationFrame:
     def __init__(self):
         self.txType = Transformation.Empty
-        self.txScores = {Transformation.Empty:0}
+        self.txScores = {Transformation.Empty: 0}
         self.txDetails = ()
-        self.Blobs= []
+        self.Blobs = []
         self.BlobCorresp = {}
         self.BlobMetaData = {}
         self.blobFrames = []
