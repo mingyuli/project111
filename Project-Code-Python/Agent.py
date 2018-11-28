@@ -10,7 +10,7 @@
 
 # Install Pillow and uncomment this line to access image processing.
 from PIL import Image, ImageChops
-from Utils import Transformation
+from Utils import TransformationEnum
 from TransformFinder import TransformFinder
 import sys
 
@@ -49,7 +49,7 @@ class Agent:
     # Returning your answer as a string may cause your program to crash.
     def Solve(self, problem):
         problem_definition = DefinitionProblem()
-        answer = -1
+        answer = -1  # type: int
         # Solve 2x2 problems for Project 1
         if problem_definition.is_twobytwo_problem(problem):
             answer = TwoByTwoSolver(problem).do_basic_analysis()
@@ -61,9 +61,11 @@ class Agent:
         # Solve 3*3 problem for Project 2
         elif problem_definition.is_threebythree_problem(problem):
             answer = ThreeByThreeSolver(problem).find_solution()
+        # Solve 3*3 problem for Project 3
+        elif problem_definition.is_hard_problem(problem):
+            answer = ThreeByThreeSolver(problem).find_solution()
 
         return answer
-
 
 class DefinitionProblem:
     def __init__(self):
@@ -75,7 +77,12 @@ class DefinitionProblem:
 
     @staticmethod
     def is_threebythree_problem(problem):
-        return problem.problemType == '3x3'
+        return "C-" in problem.name
+
+    @staticmethod
+    def is_hard_problem(problem):
+        return "C-" not in problem.name and problem.problemType == '3x3'
+
 
     @staticmethod
     def get_problem_figures(problem):
@@ -555,6 +562,7 @@ class ThreeByThreeSolver:
         self.debugLevel = 1
 
     def find_solution(self):
+        # type: () -> object
         answerChoices = []
         fileA = self.problem.figures['A'].visualFilename
         A = self.to_binary(fileA)
@@ -688,55 +696,55 @@ class ThreeByThreeSolver:
             BestTxDetails = t[2]
             if solution == -1:
                 for i in ToCheckChoices[:]:
-                    if BestTxType == Transformation.Same:
+                    if BestTxType == TransformationEnum.Same:
                         score = Tx.same(H, choices[i])
                         if score > 97:
                             # if self.almost_equal(score,BestTxScore,2):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.ConstantAddition:
+                    elif BestTxType == TransformationEnum.ConstantAddition:
                         score, GHAddArea, HIAddArea = Tx.constant_addition(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 1):
                             if self.almost_equal(HIAddArea, BestTxDetails[1], 1):
                                 solution = i
                                 solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.ConstantSubtraction:
+                    elif BestTxType == TransformationEnum.ConstantSubtraction:
                         score, GHSubArea, HISubArea = Tx.constant_subtraction(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 1):
                             if self.almost_equal(HISubArea, BestTxDetails[1], 1):
                                 solution = i
                                 solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Addition:
+                    elif BestTxType == TransformationEnum.Addition:
                         score, z = Tx.addition(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 1):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Subtraction:
+                    elif BestTxType == TransformationEnum.Subtraction:
                         score, z = Tx.subtraction(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 1):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.AddcumSub:
+                    elif BestTxType == TransformationEnum.AddcumSub:
                         score, z = Tx.addcum_sub(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 5):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Common:
+                    elif BestTxType == TransformationEnum.Common:
                         score, z = Tx.common(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Divergence:
+                    elif BestTxType == TransformationEnum.Divergence:
                         score, GHScore, GIScore = Tx.divergence(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Convergence:
+                    elif BestTxType == TransformationEnum.Convergence:
                         score, GHScore, GIScore = Tx.convergence(G, H, choices[i])
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Migration:
+                    elif BestTxType == TransformationEnum.Migration:
                         Tx.BlobsC = Tx.get_blobs(choices[i])
                         correspGI = Tx.get_blob_correspondence(Tx.BlobsA, Tx.BlobsC)
                         GIMetaData = Tx.get_blob_meta_data(correspGI, Tx.BlobsA, Tx.BlobsC)
@@ -745,20 +753,20 @@ class ThreeByThreeSolver:
                             if self.almost_equal(score, BestTxScore, 1):
                                 solution = i
                                 solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Expansion:
+                    elif BestTxType == TransformationEnum.Expansion:
                         score, xgrowth, ygrowth = Tx.repetition_by_expansion(H, choices[i])
                         if self.almost_equal(score, BestTxScore, 1):
                             if self.almost_equal(xgrowth, BestTxDetails[0], 1):
                                 if self.almost_equal(ygrowth, BestTxDetails[1], 1):
                                     solution = i
                                     solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.Translation:
+                    elif BestTxType == TransformationEnum.Translation:
                         score, leftOffsetCol, leftOffsetRow, rightOffsetCol, rightOffsetRow = Tx.repetition_by_translation(
                             H, choices[i])
                         if self.almost_equal(score, BestTxScore, 2):
                             solution = i
                             solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.BlobTransforms:
+                    elif BestTxType == TransformationEnum.BlobTransforms:
                         BlobsG = Tx.BlobsA
                         BlobsH = Tx.BlobsB
                         BlobsI = Tx.get_blobs(choices[i])
@@ -807,7 +815,7 @@ class ThreeByThreeSolver:
                                                                                                             0.1):
                                     solution = i
                                     solutionSet.append((i, 0))
-                    elif BestTxType == Transformation.ScalingOfOneObject:
+                    elif BestTxType == TransformationEnum.ScalingOfOneObject:
                         BlobsH = Tx.BlobsB
                         BlobsI = Tx.get_blobs(choices[i])
                         corresp, HIadditionCount, HIdeletionCount = Tx.get_blob_correspondence(BlobsH, BlobsI)
@@ -822,7 +830,7 @@ class ThreeByThreeSolver:
                                     if self.almost_equal(diff, 0, 3):
                                         solution = i
                                         solutionSet.append((i, self.get_deviation(score, BestTxScore)))
-                    elif BestTxType == Transformation.TranslationOfOneObject:
+                    elif BestTxType == TransformationEnum.TranslationOfOneObject:
                         BlobsH = Tx.BlobsB
                         BlobsI = Tx.get_blobs(choices[i])
                         corresp, HIadditionCount, HIdeletionCount = Tx.get_blob_correspondence(BlobsH, BlobsI)

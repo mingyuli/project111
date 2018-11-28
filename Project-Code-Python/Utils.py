@@ -1,5 +1,5 @@
 #Utils classes for storing all enum data which specifies the transformation type and metrics
-class Transformation:
+class TransformationEnum:
     Empty = 0
     Same = 12
     Expansion = 1
@@ -18,7 +18,7 @@ class Transformation:
     AddcumSub = 16
     Common = 17
 
-class Attribute:
+class AttributeEnum:
     inside = 1
     above = 2
     alignment = 3
@@ -34,7 +34,7 @@ class Conversion:
         self.FinalState = final
 
     def getConvertedValue(self,sourceValue = "none"):
-        if self.TransformationType == Transformation.Translate:
+        if self.TransformationType == TransformationEnum.Translate:
             destValue = sourceValue
             topBottom = "none"
             leftRight = "none"
@@ -57,7 +57,7 @@ class Conversion:
                 elif "right" in sourceValue:
                     destValue = destValue.replace("right","left")
             return destValue
-        elif self.TransformationType == Transformation.Reflect:
+        elif self.TransformationType == TransformationEnum.Reflect:
             aQuad = self.getQuadrant(int(self.InitialState))
             bQuad = self.getQuadrant(int(self.FinalState))
             srcQuad = self.getQuadrant(int(sourceValue))
@@ -78,7 +78,7 @@ class Conversion:
                 destQuad = aQuad
                 destValue = int(self.InitialState)
             return str(destValue % 360)
-        elif self.TransformationType == Transformation.Rotate:
+        elif self.TransformationType == TransformationEnum.Rotate:
             degreeOfRotation = int(self.FinalState) - int(self.InitialState)
             destValue = int(sourceValue) + degreeOfRotation
             return str(destValue % 360)
@@ -148,3 +148,37 @@ class BlobPairInfo:
         if self.iCenter and self.iFill and (not self.iWidth or not self.iHeight):
             return True
         return False
+
+class TransformationFrame:
+    def __init__(self):
+        self.txType = TransformationEnum.Empty
+        self.txScores = {TransformationEnum.Empty: 0}
+        self.txDetails = ()
+        self.Blobs = []
+        self.BlobCorresp = {}
+        self.BlobMetaData = {}
+        self.blobFrames = []
+
+    def assignTxScore(self,transType, details):
+        self.txScores[transType] = details[0]
+        if self.txScores[self.txType] < details[0]:
+            self.txType = transType
+            self.txDetails = details[1:]
+
+    def getHighestScore(self):
+        return self.txScores[self.txType]
+
+    def getBestTransformation(self):
+        return self.txType
+
+    def getBestTxDetails(self):
+        return self.txDetails
+
+    def setBestTxDetails(self,details):
+        self.txDetails = details
+
+class BlobFrame:
+    def __init__(self):
+        self.type = TransformationEnum.Empty
+        self.src = 0
+        self.dstn = 0

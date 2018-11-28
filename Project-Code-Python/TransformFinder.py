@@ -1,4 +1,4 @@
-from Utils import Transformation, Blob, BlobPairInfo
+from Utils import TransformationEnum, Blob, BlobPairInfo, TransformationFrame
 from PIL import Image, ImageChops, ImageDraw
 from collections import deque, defaultdict
 
@@ -13,11 +13,11 @@ class TransformFinder:
     def find_tx(self, A, B, C):
         self.IMAGE_WIDTH = A.width
         self.IMAGE_HEIGHT = A.height
-        Tx = []
         self.BlobsA = self.get_blobs(A)
         #self.show_blobs(A,BlobsA)
         self.BlobsB = self.get_blobs(B)
         self.BlobsC = self.get_blobs(C)
+        Tx = []
 
         #Super Transformations (level 1)
         Tx0 = self.find_super_tx(A, B, C)
@@ -71,27 +71,27 @@ class TransformFinder:
 
     def find_super_tx(self, A, B, C):
         Tx = TransformationFrame()
-        Tx.assignTxScore(Transformation.ConstantAddition, self.constant_addition(A, B, C))
-        Tx.assignTxScore(Transformation.ConstantSubtraction, self.constant_subtraction(A, B, C))
-        Tx.assignTxScore(Transformation.Addition, self.addition(A, B, C))
-        Tx.assignTxScore(Transformation.Subtraction, self.subtraction(A, B, C))
-        Tx.assignTxScore(Transformation.AddcumSub, self.addcum_sub(A, B, C))
-        Tx.assignTxScore(Transformation.Common, self.common(A, B, C))
-        Tx.assignTxScore(Transformation.Divergence, self.divergence(A, B, C))
-        Tx.assignTxScore(Transformation.Convergence, self.convergence(A, B, C))
+        Tx.assignTxScore(TransformationEnum.ConstantAddition, self.constant_addition(A, B, C))
+        Tx.assignTxScore(TransformationEnum.ConstantSubtraction, self.constant_subtraction(A, B, C))
+        Tx.assignTxScore(TransformationEnum.Addition, self.addition(A, B, C))
+        Tx.assignTxScore(TransformationEnum.Subtraction, self.subtraction(A, B, C))
+        Tx.assignTxScore(TransformationEnum.AddcumSub, self.addcum_sub(A, B, C))
+        Tx.assignTxScore(TransformationEnum.Common, self.common(A, B, C))
+        Tx.assignTxScore(TransformationEnum.Divergence, self.divergence(A, B, C))
+        Tx.assignTxScore(TransformationEnum.Convergence, self.convergence(A, B, C))
         correspAC, additionCnt, deletionCnt = self.get_blob_correspondence(self.BlobsA, self.BlobsC)
         ACMetaData = self.get_blob_meta_data(correspAC, self.BlobsA, self.BlobsC)
         if ACMetaData['repetition'] == False and ACMetaData['oneToOne'] == True:
-            Tx.assignTxScore(Transformation.Migration, self.migration(A, B, C))
+            Tx.assignTxScore(TransformationEnum.Migration, self.migration(A, B, C))
         return Tx
 
     def find_figure_tx(self, A, B):
         Tx = TransformationFrame()
         #Transformations (level 2)
-        Tx.assignTxScore(Transformation.Same, (self.same(A, B), 0))
+        Tx.assignTxScore(TransformationEnum.Same, (self.same(A, B), 0))
         if Tx.getHighestScore() < self.ThresholdScore:
-            Tx.assignTxScore(Transformation.Expansion, self.repetition_by_expansion(A, B))
-            Tx.assignTxScore(Transformation.Translation, self.repetition_by_translation(A, B))
+            Tx.assignTxScore(TransformationEnum.Expansion, self.repetition_by_expansion(A, B))
+            Tx.assignTxScore(TransformationEnum.Translation, self.repetition_by_translation(A, B))
         #Tx.assignTxScore(Transformation.RepetitionByCircularTranslation,self.RepetitionByCircularTranslation(A,B))
         return Tx
 
@@ -115,9 +115,9 @@ class TransformFinder:
                 details = self.blob_transforms(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1])
                 details = (details[0],details[1],details[2]+numberMorphed,details[3],details[4])
                 details = details + (Tx.BlobMetaData['AdditionCount'],Tx.BlobMetaData['DeletionCount'],Tx.BlobMetaData['blobCountDifference'])
-                Tx.assignTxScore(Transformation.BlobTransforms,details)
-                Tx.assignTxScore(Transformation.ScalingOfOneObject, self.scaling_of_one_object(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1]))
-                Tx.assignTxScore(Transformation.TranslationOfOneObject, self.translation_of_one_object(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1]))
+                Tx.assignTxScore(TransformationEnum.BlobTransforms, details)
+                Tx.assignTxScore(TransformationEnum.ScalingOfOneObject, self.scaling_of_one_object(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1]))
+                Tx.assignTxScore(TransformationEnum.TranslationOfOneObject, self.translation_of_one_object(Tx.corresp, Tx.Blobs[0], Tx.Blobs[1]))
         return Tx
 
     def blob_transforms(self, corresp, BlobsA, BlobsB):
@@ -460,18 +460,18 @@ class TransformFinder:
         score = 100*(whitePixelCount/float(totalPixels))
         return score
 
-    def fillBlob(self,img,width,c,r):
+    def fillBlob(self, img, width, c, r):
         sr = r
         sc = c
         er = r
         ec = c
         filledPixels = 0
         queue = deque()
-        queue.append((c,r))
+        queue.append((c, r))
         while queue:
             c,r = queue.popleft()
-            for i in range(-1,2):
-                for j in range(-1,2):
+            for i in range(-1, 2):
+                for j in range(-1, 2):
                     if img[c+j + (r+i)*width] != 0:
                         img[c+j + (r+i)*width] = 0
                         filledPixels += 1
@@ -484,7 +484,7 @@ class TransformFinder:
                             sr = r+i
                         if c+j < sc:
                             sc = c+j
-        return sr,sc, er, ec, img, filledPixels
+        return sr, sc, er, ec, img, filledPixels
 
     def repetition_by_translation(self, A, B):
         s = A.getbbox()
@@ -566,37 +566,3 @@ class TransformFinder:
         totalPixels = len(pixels)
         score = 100 - 100*(whitePixelCount/float(totalPixels))
         return score
-
-class TransformationFrame:
-    def __init__(self):
-        self.txType = Transformation.Empty
-        self.txScores = {Transformation.Empty: 0}
-        self.txDetails = ()
-        self.Blobs = []
-        self.BlobCorresp = {}
-        self.BlobMetaData = {}
-        self.blobFrames = []
-
-    def assignTxScore(self,transType, details):
-        self.txScores[transType] = details[0]
-        if self.txScores[self.txType] < details[0]:
-            self.txType = transType
-            self.txDetails = details[1:]
-
-    def getHighestScore(self):
-        return self.txScores[self.txType]
-
-    def getBestTransformation(self):
-        return self.txType
-
-    def getBestTxDetails(self):
-        return self.txDetails
-
-    def setBestTxDetails(self,details):
-        self.txDetails = details
-
-class BlobFrame:
-    def __init__(self):
-        self.type = Transformation.Empty
-        self.src = 0
-        self.dstn = 0
