@@ -52,17 +52,27 @@ class Agent:
         answer = -1  # type: int
         # Solve 2x2 problems for Project 1
         if problem_definition.is_twobytwo_problem(problem):
+            """
             answer = TwoByTwoSolver(problem).do_basic_analysis()
             # Return answer if first layer analysis succeeds
             if answer != -1:
                 return answer
             # Else perform a deeper analysis
             answer = TwoByTwoSolver(problem).do_transformation_analysis()
+            """
+            return answer
         # Solve 3*3 problem for Project 2
         elif problem_definition.is_threebythree_problem(problem):
+            """"
             answer = ThreeByThreeSolver(problem).find_solution()
+            """
+            return answer
         # Solve 3*3 problem for Project 3
-        elif problem_definition.is_hard_problem(problem):
+        elif problem_definition.is_hard_problem_E(problem):
+            answer = ThreeByThreeSolver(problem).find_solution()
+        elif problem_definition.is_hard_problem_D_ch(problem):
+            answer = ThreeByThreeSolver(problem).find_solution()
+        elif problem_definition.is_hard_problem_D(problem):
             answer = ThreeByThreeSolver(problem).find_solution()
 
         return answer
@@ -77,11 +87,19 @@ class DefinitionProblem:
 
     @staticmethod
     def is_threebythree_problem(problem):
-        return "C-" in problem.name and problem.problemType == '3x3'
+        return "Problem C-" in problem.name and problem.problemType == '3x3'
 
     @staticmethod
-    def is_hard_problem(problem):
-        return "C-" not in problem.name and problem.problemType == '3x3'
+    def is_hard_problem_D(problem):
+        return "Basic Problem D-" in problem.name and problem.problemType == '3x3'
+
+    @staticmethod
+    def is_hard_problem_D_ch(problem):
+        return "Test Problem D-" in problem.name and problem.problemType == '3x3'
+
+    @staticmethod
+    def is_hard_problem_E(problem):
+        return "Problem E-" in problem.name and problem.problemType == '3x3'
 
 
     @staticmethod
@@ -557,9 +575,6 @@ class ThreeByThreeSolver:
 
     def __init__(self, problem):
         self.problem = problem
-        sys.setrecursionlimit(10000)
-        self.DEBUG = False
-        self.debugLevel = 1
 
     def find_solution(self):
         # type: () -> object
@@ -588,13 +603,13 @@ class ThreeByThreeSolver:
 
         best_txs_diag = self.get_best_transformations(tx_diagonal)
         best_txs_hor = self.get_best_transformations(tx_horizontal)
-
         # Diagnal vs Hor_Vert
         if self.diag_vs_hor_vert(best_txs_diag, best_txs_hor) == 'Diagonal':
             diag_tx_solution_set = self.get_solution(A, E, best_txs_diag,
                                                      answerChoices)  # type: List[Union[Tuple[Union[int, Any], Any], Tuple[Union[int, Any], int]]]
             answer = self.get_best_solution(diag_tx_solution_set)
         else:
+            print self.problem.name
             hor_tx_solution_set = self.get_solution(G, H, best_txs_hor, answerChoices)
             # Ordering of transformations
             best_txs_ver = self.get_best_transformations(tx_vertical)
