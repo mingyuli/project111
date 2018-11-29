@@ -77,7 +77,7 @@ class DefinitionProblem:
 
     @staticmethod
     def is_threebythree_problem(problem):
-        return "C-" in problem.name
+        return "C-" in problem.name and problem.problemType == '3x3'
 
     @staticmethod
     def is_hard_problem(problem):
