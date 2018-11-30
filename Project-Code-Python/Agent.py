@@ -52,21 +52,16 @@ class Agent:
         answer = -1  # type: int
         # Solve 2x2 problems for Project 1
         if problem_definition.is_twobytwo_problem(problem):
-            """
             answer = TwoByTwoSolver(problem).do_basic_analysis()
             # Return answer if first layer analysis succeeds
             if answer != -1:
                 return answer
             # Else perform a deeper analysis
             answer = TwoByTwoSolver(problem).do_transformation_analysis()
-            """
             return answer
         # Solve 3*3 problem for Project 2
         elif problem_definition.is_threebythree_problem(problem):
-            """"
             answer = ThreeByThreeSolver(problem).find_solution()
-            """
-            return answer
         # Solve 3*3 problem for Project 3
         elif problem_definition.is_hard_problem_E(problem):
             answer = ThreeByThreeSolver(problem).find_solution()
@@ -74,7 +69,8 @@ class Agent:
             answer = ThreeByThreeSolver(problem).find_solution()
         elif problem_definition.is_hard_problem_D(problem):
             answer = ThreeByThreeSolver(problem).find_solution()
-
+        elif problem_definition.is_hard_problem_D_test(problem):
+            answer = ThreeByThreeSolver(problem).find_solution()
         return answer
 
 class DefinitionProblem:
@@ -95,6 +91,10 @@ class DefinitionProblem:
 
     @staticmethod
     def is_hard_problem_D_ch(problem):
+        return "Challenge Problem D-" in problem.name and problem.problemType == '3x3'
+
+    @staticmethod
+    def is_hard_problem_D_test(problem):
         return "Test Problem D-" in problem.name and problem.problemType == '3x3'
 
     @staticmethod
