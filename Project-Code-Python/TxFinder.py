@@ -92,7 +92,6 @@ class TxFinder:
         if Tx.getHighestScore() < self.ThresholdScore:
             Tx.assignTxScore(TransformationEnum.Expansion, self.repetition_by_expansion(A, B))
             Tx.assignTxScore(TransformationEnum.Translation, self.repetition_by_translation(A, B))
-        #Tx.assignTxScore(Transformation.RepetitionByCircularTranslation,self.RepetitionByCircularTranslation(A,B))
         return Tx
 
     def find_blob_tx(self, A, BlobsA, B, BlobsB):
@@ -102,10 +101,6 @@ class TxFinder:
         Tx.corresp, additionsToBlobsB, deletionsInBlobsA = self.get_blob_correspondence(BlobsA, BlobsB)
         Tx.BlobMetaData = self.get_blob_meta_data(Tx.corresp, BlobsA, BlobsB)
         numberMorphed = 0
-        #if  additionsToBlobsB==deletionsInBlobsA:
-        #    numberMorphed = additionsToBlobsB
-        #    additionsToBlobsB = 0
-        #    deletionsInBlobsA = 0
         Tx.BlobMetaData['AdditionCount'] = additionsToBlobsB
         Tx.BlobMetaData['DeletionCount'] = deletionsInBlobsA
         #Blob Transformations ( level 3)
@@ -271,9 +266,6 @@ class TxFinder:
                 BminusC = ImageChops.difference(B,C)
                 BCAdditionArea = self.get_fill_percentage(BminusC, 0, 0, BminusC.width, BminusC.height)
                 score = 0
-                #print("In Const Add:")
-                #print("AB Added area:"+str(ABAdditionArea))
-                #print("BC Added area:"+str(BCAdditionArea))
                 if ABAdditionArea > 1 and BCAdditionArea > 1:
                     if abs(ABAdditionArea - BCAdditionArea) < 4:
                         similarity = self.similarity(C, ImageChops.lighter(B, ImageChops.difference(B, C)))

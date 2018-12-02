@@ -1,22 +1,22 @@
 #Utils classes for storing all enum data which specifies the transformation type and metrics
 class TransformationEnum:
     Empty = 0
-    Same = 12
     Expansion = 1
     Translation = 2
-    TranslationOfOneObject = 4
-    ScalingOfOneObject = 5
-    ConstantAddition = 6
-    Divergence = 7
-    Convergence = 8
-    Migration = 9
-    ConstantSubtraction = 11
-    Scaling = 10
-    BlobTransforms = 13
-    Addition = 14
-    Subtraction = 15
-    AddcumSub = 16
-    Common = 17
+    TranslationOfOneObject = 3
+    ScalingOfOneObject = 4
+    ConstantAddition = 5
+    Divergence = 6
+    Convergence = 7
+    Migration = 8
+    Scaling = 9
+    ConstantSubtraction = 10
+    Same = 11
+    BlobTransforms = 12
+    Addition = 13
+    Subtraction = 14
+    AddcumSub = 15
+    Common = 16
 
 class AttributeEnum:
     inside = 1
