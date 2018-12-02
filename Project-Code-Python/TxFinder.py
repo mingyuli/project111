@@ -2,13 +2,13 @@ from Utils import TransformationEnum, Blob, BlobPairInfo, TransformationFrame
 from PIL import Image, ImageChops, ImageDraw
 from collections import deque, defaultdict
 
-class TransformFinder:
+class TxFinder:
     def __init__(self):
         self.PIXEL_PRESENT = 1
         self.PIXEL_NOT_PRESENT = 0
         self.IMAGE_WIDTH = 0
         self.IMAGE_HEIGHT = 0
-        self.ThresholdScore = 99
+        self.ThresholdScore = 92
 
     def find_tx(self, A, B, C):
         self.IMAGE_WIDTH = A.width
@@ -29,7 +29,7 @@ class TransformFinder:
         Tx.append([Tx1,Tx2])
 
         #Blob Transformations (level 3)
-        if max(Tx1.getHighestScore(),Tx2.getHighestScore()) < self.ThresholdScore:
+        if max(Tx0.getHighestScore(),Tx1.getHighestScore(),Tx2.getHighestScore()) < self.ThresholdScore:
             Tx3 = self.find_blob_tx(A, self.BlobsA, B, self.BlobsB)
             Tx4 = self.find_blob_tx(B, self.BlobsB, C, self.BlobsC)
             Tx5 = self.find_blob_tx(A, self.BlobsA, C, self.BlobsC)
@@ -410,16 +410,16 @@ class TransformFinder:
         A.show()
 
     def get_blobs(self, A):
-        imgD = A.copy()
-        img1 = imgD.getdata()
-        img = list(imgD.getdata())
+        imgCopy = A.copy()  # type: object
+        img1 = imgCopy.getdata()
+        img = list(imgCopy.getdata())
         #delete weak links in image
         #end points or exceptioncal case handling - border case do
         for i in range(len(img)):
-            if img[i]!=0:
-                if img[i-1]==0 and img[i+1]==0:
-                    img[i]=0
-                if img[i - A.width]==0 and img[i + A.width]==0:
+            if img[i]!= 0:
+                if img[i-1] == 0 and img[i+1] == 0:
+                    img[i] = 0
+                if img[i - A.width] == 0 and img[i + A.width]==0:
                     img[i]=0
         img1.putdata(img)
         Blobs = []

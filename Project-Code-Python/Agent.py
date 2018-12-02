@@ -11,7 +11,7 @@
 # Install Pillow and uncomment this line to access image processing.
 from PIL import Image, ImageChops
 from Utils import TransformationEnum
-from TransformFinder import TransformFinder
+from TxFinder import TxFinder
 import sys
 
 
@@ -609,7 +609,6 @@ class ThreeByThreeSolver:
                                                      answerChoices)  # type: List[Union[Tuple[Union[int, Any], Any], Tuple[Union[int, Any], int]]]
             answer = self.get_best_solution(diag_tx_solution_set)
         else:
-            print self.problem.name
             hor_tx_solution_set = self.get_solution(G, H, best_txs_hor, answerChoices)
             # Ordering of transformations
             best_txs_ver = self.get_best_transformations(tx_vertical)
@@ -619,11 +618,11 @@ class ThreeByThreeSolver:
         return answer
 
     def find_transformation(self, A, B, C):
-        TxManager = TransformFinder()
+        TxManager = TxFinder()
         return TxManager.find_tx(A, B, C)
 
     def find_diag_transformation(self, A, B):
-        TxManager = TransformFinder()
+        TxManager = TxFinder()
         return TxManager.find_diag_tx(A, B);
 
     def diag_vs_hor_vert(self, diagTxs, horTxs):
@@ -696,7 +695,7 @@ class ThreeByThreeSolver:
         for option in answerChoices:
             choices.append(self.to_binary(option))
         solution = -1
-        Tx = TransformFinder()
+        Tx = TxFinder()
         Tx.BlobsA = Tx.get_blobs(G)
         Tx.BlobsB = Tx.get_blobs(H)
         ToCheckChoices = [1, 2, 3, 4, 5, 6, 7, 8]
